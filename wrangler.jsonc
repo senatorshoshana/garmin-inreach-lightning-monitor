@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "garmin-inreach-lightning-monitor",
+  "main": "src/index.js",
+  "compatibility_date": "2026-09-01",
+
+  // Add your own KV namespace ID when deploying with Wrangler.
+  // Do not copy someone else's namespace ID from screenshots or logs.
+  "kv_namespaces": [
+    {
+      "binding": "LIGHTNING_STATE",
+      "id": "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+    }
+  ],
+
+  "triggers": {
+    "crons": ["* * * * *"]
+  }
+}
