@@ -1,0 +1,19 @@
+# Wrangler / Cloudflare local state
+.wrangler/
+.dev.vars
+.dev.vars.*
+.env
+.env.*
+
+# Node
+node_modules/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Local logs and dumps
+*.log
+*.jsonl
+debug/
