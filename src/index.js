@@ -1989,6 +1989,16 @@ function shouldSendLightningAlert(
     );
 
 
+  // Failed sends must not be suppressed by strike deduplication or cooldowns.
+  // The monitor's normal cadence and tracking checks still apply.
+  if (state.last_lightning_alert_success === false) {
+    return {
+      send: true,
+      reason: "retry_failed_alert",
+      level
+    };
+  }
+
   const lastAlertAt =
     state
       ?.last_lightning_alert_at ??
