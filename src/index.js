@@ -1471,50 +1471,125 @@ async function queryLightning(
     );
   }
 
+  // Xweather nearby-lightning query.
+  //
+  // IMPORTANT:
+  // The lightning endpoint requires an action such as
+  // /closest. The Garmin GPS goes in the p= parameter.
+  //
+  // filter=all explicitly requests all supported
+  // lightning types.
+
+  const params =
+    new URLSearchParams({
+      p:
+        `${latitude},${longitude}`,
+
+      radius:
+        `${LIGHTNING_RADIUS_MILES}miles`,
+
+      filter:
+        "all",
+
+      limit:
+        "1000",
+
+      format:
+        "json",
+
+      client_id:
+        env.XWEATHER_CLIENT_ID,
+
+      client_secret:
+        env.XWEATHER_CLIENT_SECRET
+    });
+
+
   const xweatherUrl =
-    `https://data.api.xweather.com/lightning/` +
-    `${latitude},${longitude}` +
-    `?client_id=${encodeURIComponent(
-      env.XWEATHER_CLIENT_ID
-    )}` +
-    `&client_secret=${encodeURIComponent(
-      env.XWEATHER_CLIENT_SECRET
-    )}` +
-    `&radius=${LIGHTNING_RADIUS_MILES}mi` +
-    `&limit=1000`;
+    `https://data.api.xweather.com/lightning/closest?` +
+    params.toString();
+
 
   const response =
     await fetch(
       xweatherUrl
     );
 
+
   let data;
+
 
   try {
     data =
       await response.json();
+
   } catch (_) {
     throw new Error(
       `Xweather returned HTTP ${response.status} with invalid JSON`
     );
   }
 
+
   if (!response.ok) {
     throw new Error(
       `Xweather HTTP ${response.status}: ` +
-      JSON.stringify(data).slice(
+      JSON.stringify(
+        data
+      ).slice(
         0,
         300
       )
     );
   }
 
-  const raw =
-    Array.isArray(
+
+  // IMPORTANT:
+  //
+  // Never silently interpret an unexpected Xweather
+  // response as "zero lightning."
+  //
+  // Previously, an HTTP 200 with an unexpected response
+  // shape became [], which looked exactly like there
+  // were no strikes.
+  //
+  // If Xweather changes its response or rejects something
+  // in an unexpected way, fail visibly instead.
+
+  if (
+    data?.success !== true ||
+    !Array.isArray(
       data?.response
     )
-      ? data.response
-      : [];
+  ) {
+    throw new Error(
+      "Xweather returned HTTP 200 but an unexpected " +
+      "lightning response shape: " +
+      JSON.stringify({
+        success:
+          data?.success ??
+          null,
+
+        error:
+          data?.error ??
+          null,
+
+        response_type:
+          Array.isArray(
+            data?.response
+          )
+            ? "array"
+            : typeof data?.response
+      }).slice(
+        0,
+        300
+      )
+    );
+  }
+
+
+  const raw =
+    data.response;
+
 
   const strikes =
     raw
@@ -1526,12 +1601,17 @@ async function queryLightning(
             longitude
           )
       )
-      .filter(Boolean)
+      .filter(
+        Boolean
+      )
       .filter(
         strike =>
-          strike.relativeTo.distanceMI <=
+          strike
+            .relativeTo
+            .distanceMI <=
           LIGHTNING_RADIUS_MILES
       );
+
 
   return {
     status:
